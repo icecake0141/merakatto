@@ -6,10 +6,10 @@
 # https://github.com/meraki/dashboard-api-python
 import meraki
 
-# Instantiate dashboard API
-dashboard = meraki.DashboardAPI()
 # Disable Meraki SDK loggin
 OUTPUT_LOG = False
+# Instantiate dashboard API
+dashboard = meraki.DashboardAPI(output_log=OUTPUT_LOG)
 
 def main():
 
@@ -20,6 +20,21 @@ def main():
         print("Organization ID: " + x.get('id'))
         print(" Name: " + x.get('name'))
         print(" URL: " + x.get('url'))
+        my_networks = dashboard.organizations.getOrganizationNetworks(organizationId=x.get('id'))
+        for y in my_networks:
+            print (" Network name: " + y.get('name'))
+            print ("  Network ID: " + y.get('id'))
+
+    # Get Organization Configuration Changes
+    my_changes = dashboard.organizations.getOrganizationConfigurationChanges(organizationId="956103")
+
+    for x in my_changes:
+        print('Date > ', x['ts'])
+        print(' Admin > ', x['adminName'])
+        print(' Page > ', x['page'])
+        print(' Label > ', x['label'])
+        print(' oldValue > ', x['oldValue'])
+        print(' newValue > ', x['newValue'])
 
     #my_nets = dashboard.organizations.getOrganizationNetworks()
     #my_nets = dashboard.networks.getNetwork()
