@@ -9,14 +9,19 @@ import meraki
 # Instantiate dashboard API
 dashboard = meraki.DashboardAPI()
 
-# Get a list of Organization associated with provided API token
-my_orgs = dashboard.organizations.getOrganizations()
+def main():
 
-for x in my_orgs:
-    print("Organization ID: " + x.get('id'))
-    print(" Name: " + x.get('name'))
-    print(" URL: " + x.get('url'))
+    # Get a list of Organization associated with provided API token
+    my_orgs = dashboard.organizations.getOrganizations()
 
-#my_nets = dashboard.organizations.getOrganizationNetworks()
-#my_nets = dashboard.networks.getNetwork()
-#print(my_nets)
+    for x in my_orgs:
+        print("Organization ID: " + x.get('id'))
+        print(" Name: " + x.get('name'))
+        print(" URL: " + x.get('url'))
+
+    #my_nets = dashboard.organizations.getOrganizationNetworks()
+    #my_nets = dashboard.networks.getNetwork()
+    #print(my_nets)
+
+if __name__ == "__main__":
+    main()
