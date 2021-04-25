@@ -1,32 +1,65 @@
 #!/usr/bin/env python3
 # Meraki API interaction bot
 
+import os
+
+# https://slack.dev/python-slack-sdk/api-docs/slack_sdk/index.html
+from slack_sdk.webhook import WebhookClient
+
 # set Meraki dashboard API token as a shell environment variable 
 # export MERAKI_DASHBOARD_API_KEY=<API KEYS>
 # https://github.com/meraki/dashboard-api-python
 import meraki
 
-# Disable Meraki SDK loggin
+### Meraki SDK config variables
+# Disable Meraki SDK logging to console
 OUTPUT_LOG = False
-# Instantiate dashboard API
-dashboard = meraki.DashboardAPI(output_log=OUTPUT_LOG)
+# Disable Meraki SDK logging to console
+PRINT_TO_CONSOLE = False
 
-def main():
 
-    # Get a list of Organization associated with provided API token
-    my_orgs = dashboard.organizations.getOrganizations()
+# Instantiate Meraki dashboard API
+dashboard = meraki.DashboardAPI(output_log=OUTPUT_LOG, print_console=PRINT_TO_CONSOLE)
 
-    for x in my_orgs:
-        print("Organization ID: " + x.get('id'))
-        print(" Name: " + x.get('name'))
-        print(" URL: " + x.get('url'))
-        my_networks = dashboard.organizations.getOrganizationNetworks(organizationId=x.get('id'))
-        for y in my_networks:
-            print (" Network name: " + y.get('name'))
-            print ("  Network ID: " + y.get('id'))
+# Slack Webhook URL
+slack_url = os.environ.get('SLACK_URL')
+webhook = WebhookClient(slack_url)
+
+# Meraki Organization ID
+meraki_organizations = []
+for x in os.environ.get('MERAKI_ORG_ID'):
+    meraki_organizations.append(x)
+
+# Meraki Network ID
+meraki_networks = []
+for x in os.environ.get('MERAKI_NET_ID'):
+    meraki_networks.append(x)
+
+### Functions
+
+def postSlack(message):
+
+    response = webhook.send(
+        blocks=[
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "You have a new request:\n*<fakeLink.toEmployeeProfile.com|Fred Enriquez - New device request>*"
+                }
+            }
+        ]
+    )
+
+    assert response.status_code == 200
+    assert response.body == "ok"
+
+    return
+
+def getOrganizationConfigurationChanges(org_id):
 
     # Get Organization Configuration Changes
-    my_changes = dashboard.organizations.getOrganizationConfigurationChanges(organizationId="956103")
+    my_changes = dashboard.organizations.getOrganizationConfigurationChanges(organizationId=org_id)
 
     for x in my_changes:
         print('Date > ', x['ts'])
@@ -36,9 +69,28 @@ def main():
         print(' oldValue > ', x['oldValue'])
         print(' newValue > ', x['newValue'])
 
-    #my_nets = dashboard.organizations.getOrganizationNetworks()
-    #my_nets = dashboard.networks.getNetwork()
-    #print(my_nets)
+def getOrganizationNetworks(org_id):
+
+    my_nets = dashboard.organizations.getOrganizationNetworks(organizationId=org_id)
+    for x in my_nets:
+        print (" Network name: " + x.get('name'))
+        print ("  Network ID: " + x.get('id'))
+
+def getOrganizations():
+
+    # Get a list of Organization associated with provided API token
+    my_orgs = dashboard.organizations.getOrganizations()
+
+    for x in my_orgs:
+        print("Organization ID: " + x.get('id'))
+        print(" Name: " + x.get('name'))
+        print(" URL: " + x.get('url'))
+
+### Main
+
+def main():
+
+    return 0
 
 if __name__ == "__main__":
     main()
