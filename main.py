@@ -8,6 +8,8 @@ import meraki
 
 # Instantiate dashboard API
 dashboard = meraki.DashboardAPI()
+# Disable Meraki SDK loggin
+OUTPUT_LOG = False
 
 def main():
 
