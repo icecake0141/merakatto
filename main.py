@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
 # Meraki API interaction bot
 
-# CONFIGURATION
-# You need to set shell environmetn variables
-# export MERAKI_DASHBOARD_API_KEY=<Meraki dashboard API KEY>
-# export MERAKI_ORG_ID=<Organization ID1>:<Organization ID2>
-# export MERAKI_NET_ID=<Network ID1>:<Network ID2>
-# export SLACK_URL=<Slack incoming webhook URL>
+# 2021 Apr 25
 
-import os, time
+# INSTALL
+## pip install slack_sdk
+## pip install meraki
+
+# CONFIGURATION
+## You need to set shell environmetn variables
+## export MERAKI_DASHBOARD_API_KEY=<Meraki dashboard API KEY>
+## export MERAKI_ORG_ID=<Organization ID1>:<Organization ID2>
+## export MERAKI_NET_ID=<Network ID1>:<Network ID2>
+## export SLACK_URL=<Slack incoming webhook URL>
+
+# RUN
+## ./main.pl
+
+import os
+import time, calendar
 
 # https://slack.dev/python-slack-sdk/api-docs/slack_sdk/index.html
 from slack_sdk.webhook import WebhookClient
@@ -107,7 +117,7 @@ def postSlack(message):
 
     return
 
-def getNetworkEvents(net_id):
+def getNetworkEvents(net_id,logstarttime):
 
     log = []
 
@@ -117,18 +127,21 @@ def getNetworkEvents(net_id):
     # loop for my_events list
     for x in my_events.get('events'):
 
-        log.append('Occurred at ' + x.get('occurredAt') + '\n')
+        if checkTimestamp(x.get('occurredAt'),logstarttime):
+            log.append('Occurred at ' + x.get('occurredAt') + '\n')
 
-        # code block
-        log.append('```\n')
+            # code block
+            log.append('```\n')
 
-        # loop for dict
-        for key in x:
-            if key != 'occurredAt':
-                if isinstance(x.get(key), str):
-                    log.append('`' + key + '` : ' + x.get(key) + '\n')
+            # loop for dict
+            for key in x:
+                if key != 'occurredAt':
+                    if isinstance(x.get(key), str):
+                        log.append(key + ' : ' + x.get(key) + '\n')
 
-        log.append('```\n')
+            log.append('```\n')
+        else:
+            pass
 
     return log
 
@@ -175,13 +188,38 @@ def getOrganizations():
         print(" Name: " + x.get('name'))
         print(" URL: " + x.get('url'))
 
+def getCurrentGmtime():
+
+    t = int(time.time())
+
+    return t
+
+def checkTimestamp(logtime,basetime):
+
+    # convert calendar time to epoch
+    logtime_epoch = calendar.timegm(time.strptime(logtime, "%Y-%m-%dT%H:%M:%S.%fZ"))
+
+    # compare time if it's withing 30 minutes
+    if basetime < logtime_epoch:
+        return True
+    else:
+        return False
+
+#def convertUnixtimetoCalendartime
+
 ### Main
 
 def main():
 
-    changelgos = []
-    text = ''
+    # Obtain current unit time - 30 minutes
+    logstarttime = getCurrentGmtime() - 1800
 
+    #print (time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(t)))
+
+    changelogs = []
+    eventlogs = []
+
+    text = '----------CHANGE LOGS----------\n'
     # loop for each Organization
     for x in meraki_organizations:
 
@@ -191,15 +229,17 @@ def main():
 
             # loop for log lines
             for y in changelogs:
-                for key in y:
-                    text += '`' + key + '` : ' + y.get(key) + '\n'
+                if checkTimestamp(y.get('date'),logstarttime):
+                    for key in y:
+                        text += '`' + key + '` : ' + y.get(key) + '\n'
 
             simplepostSlack(text)
             time.sleep(1)
 
+    text = '----------EVENT LOGS----------\n'
     for x in meraki_networks:
         if x != '':
-            eventlogs = getNetworkEvents(x)
+            eventlogs = getNetworkEvents(x,logstarttime)
             for y in eventlogs:
                 text += y
 
